@@ -3,26 +3,33 @@ r"""
 Monte-Carlo Acquisition Functions for Multi-objective Bayesian optimization.
 
 """
-
 from __future__ import annotations
 
+from typing import Any, Callable, List, Optional, Union
+
+import torch
 from botorch.acquisition.multi_objective.monte_carlo import MultiObjectiveMCAcquisitionFunction
+from botorch.acquisition.multi_objective.objective import MCMultiOutputObjective
 from botorch.acquisition.objective import PosteriorTransform
-from botorch.exceptions.errors import UnsupportedError
-from botorch.exceptions.warnings import BotorchWarning
 from botorch.models.model import Model
+from botorch.sampling.base import MCSampler
+from botorch.utils.transforms import (
+    concatenate_pending_points,
+    t_batch_mode_transform,
+)
+from torch import Tensor
 
 
 class qMultiProbabilityOfImprovement(MultiObjectiveMCAcquisitionFunction):
     r"""MC-based batch Probability of Improvement.
     Probability of improvement over the current best observed value,
-    computed using the analytic formula under a Normal posterior distribution.
     Only supports the case of q=1. Requires the posterior to be Gaussian.
-    The model must be single-outcome.
+    The model must be multi-outcome.
     Estimates the probability of improvement over the current best observed
-    value by sampling from the joint posterior distribution of the q-batch.
+    values by sampling from the joint posterior distribution of the q-batch.
     MC-based estimates of a probability involves taking expectation of an
-    indicator function; to support auto-differntiation, the indicator is    replaced with a sigmoid function with temperature parameter `tau`.
+    indicator function; to support auto-differntiation, the indicator is    
+    replaced with a sigmoid function with temperature parameter `eta`.
     two objective case:
     `qMPI(X) = P(Y1 >= best_f) * P(Y2 >= best_f2),`
     ` Y1 ~ f(X), Y2 ~ f(X), X = (x_1,...,x_q)`
